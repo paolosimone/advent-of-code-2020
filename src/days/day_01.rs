@@ -1,37 +1,24 @@
-use std::{collections::HashSet, fs::File, io::Read};
+use std::{collections::HashSet, fs::read_to_string, path::Path};
 
-use super::{input_path, Day};
+use super::{input_folder, Day};
 
 const TARGET: i32 = 2020;
 
+#[derive(Default)]
 pub struct Day01 {
     input: Vec<i32>,
 }
 
-impl Day01 {
-    const NUMBER: u8 = 1;
-
-    pub fn new() -> Self {
-        Self {
-            input: Self::load_input().expect("Error loading input"),
-        }
-    }
-
-    fn load_input() -> std::io::Result<Vec<i32>> {
-        let mut file = File::open(input_path(Self::NUMBER))?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-
-        Ok(contents
-            .lines()
-            .map(|line| line.parse::<i32>().unwrap())
-            .collect())
-    }
-}
-
 impl Day for Day01 {
-    fn number(&self) -> u8 {
-        Self::NUMBER
+    fn load_input(&mut self) {
+        let path = Path::new(&input_folder()).join("day_01");
+        let content = read_to_string(path).expect("Load input failed");
+
+        self.input = content
+            .lines()
+            .map(|line| line.parse::<i32>())
+            .collect::<Result<_, _>>()
+            .expect("Parse input failed");
     }
 
     // O(N)

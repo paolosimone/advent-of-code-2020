@@ -11,15 +11,15 @@ impl Advent {
     pub fn new() -> Self {
         Self {
             days: vec![
-                Box::new(day_01::Day01::new()),
-                Box::new(day_02::Day02::new()),
+                Box::new(day_01::Day01::default()),
+                Box::new(day_02::Day02::default()),
             ],
         }
     }
 }
 
 pub trait Day {
-    fn number(&self) -> u8;
+    fn load_input(&mut self);
     fn first_challenge(&self) -> String;
     fn second_challenge(&self) -> String;
 }
@@ -28,15 +28,14 @@ impl Display for dyn Day {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Day {:02} - first: {} | second: {}",
-            self.number(),
+            "Day - first: {} | second: {}",
             self.first_challenge(),
             self.second_challenge()
         )
     }
 }
 
-pub fn input_path(number: u8) -> String {
+pub fn input_folder() -> String {
     // it's christmas: let's unwrap all options!
     // (I hope I'm missing a better way...)
     Path::new(file!())
@@ -45,7 +44,6 @@ pub fn input_path(number: u8) -> String {
         .parent()
         .unwrap()
         .join("input")
-        .join(format!("day_{:02}", number))
         .as_path()
         .to_str()
         .unwrap()

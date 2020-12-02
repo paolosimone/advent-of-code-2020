@@ -1,29 +1,14 @@
-use std::{error::Error, fs::File, io::Read, str::FromStr};
+use std::{error::Error, fs::read_to_string, path::Path, str::FromStr};
 
-use super::{input_path, Day};
+use super::{input_folder, Day};
 use counter::Counter;
 
+#[derive(Default)]
 pub struct Day02 {
     input: Vec<Entry>,
 }
 
 impl Day02 {
-    const NUMBER: u8 = 2;
-
-    pub fn new() -> Self {
-        Self {
-            input: Self::load_input().expect("Error loading input"),
-        }
-    }
-
-    fn load_input() -> Result<Vec<Entry>, Box<dyn Error>> {
-        let mut file = File::open(input_path(Self::NUMBER))?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-
-        contents.lines().map(Entry::from_str).collect()
-    }
-
     fn count_valid<V>(&self) -> usize
     where
         V: Validator,
@@ -36,8 +21,15 @@ impl Day02 {
 }
 
 impl Day for Day02 {
-    fn number(&self) -> u8 {
-        Self::NUMBER
+    fn load_input(&mut self) {
+        let path = Path::new(&input_folder()).join("day_02");
+        let content = read_to_string(path).expect("Load input failed");
+
+        self.input = content
+            .lines()
+            .map(Entry::from_str)
+            .collect::<Result<_, _>>()
+            .expect("Parse input failed");
     }
 
     fn first_challenge(&self) -> String {
