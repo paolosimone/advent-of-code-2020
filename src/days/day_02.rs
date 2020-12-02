@@ -1,81 +1,10 @@
-use std::{fs::File, io::Read};
+use std::{error::Error, fs::File, io::Read, str::FromStr};
 
 use super::{input_path, Day};
 use counter::Counter;
 
 pub struct Day02 {
     input: Vec<Entry>,
-}
-
-#[derive(Copy, Clone)]
-struct Policy {
-    letter: char,
-    first: usize,
-    second: usize,
-}
-
-struct PolicyOld(Policy);
-struct PolicyNew(Policy);
-
-struct Entry {
-    password: String,
-    policy: Policy,
-}
-
-trait Validator: From<Policy> {
-    fn is_valid(&self, password: &str) -> bool;
-}
-
-impl From<&str> for Policy {
-    fn from(string: &str) -> Self {
-        let vec = string.split(|c| c == '-' || c == ' ').collect::<Vec<_>>();
-
-        Self {
-            first: vec[0].parse::<usize>().unwrap(),
-            second: vec[1].parse::<usize>().unwrap(),
-            letter: vec[2].chars().next().unwrap(),
-        }
-    }
-}
-
-impl From<&str> for Entry {
-    fn from(string: &str) -> Self {
-        let vec = string.split(": ").collect::<Vec<_>>();
-
-        Entry {
-            password: vec[1].trim().to_string(),
-            policy: vec[0].into(),
-        }
-    }
-}
-
-impl From<Policy> for PolicyOld {
-    fn from(policy: Policy) -> Self {
-        Self(policy)
-    }
-}
-
-impl Validator for PolicyOld {
-    fn is_valid(&self, password: &str) -> bool {
-        let policy = &self.0;
-        let counter = password.chars().collect::<Counter<_>>();
-        (policy.first..=policy.second).contains(&counter[&policy.letter])
-    }
-}
-
-impl From<Policy> for PolicyNew {
-    fn from(policy: Policy) -> Self {
-        Self(policy)
-    }
-}
-
-impl Validator for PolicyNew {
-    fn is_valid(&self, password: &str) -> bool {
-        let policy = &self.0;
-        let chars = password.as_bytes();
-        let target = policy.letter as u8;
-        (chars[policy.first - 1] == target) ^ (chars[policy.second - 1] == target)
-    }
 }
 
 impl Day02 {
@@ -87,21 +16,21 @@ impl Day02 {
         }
     }
 
-    fn load_input() -> std::io::Result<Vec<Entry>> {
+    fn load_input() -> Result<Vec<Entry>, Box<dyn Error>> {
         let mut file = File::open(input_path(Self::NUMBER))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
 
-        Ok(contents.lines().map(Entry::from).collect())
+        contents.lines().map(Entry::from_str).collect()
     }
 
-    fn count_valid<T>(&self) -> usize
+    fn count_valid<V>(&self) -> usize
     where
-        T: Validator,
+        V: Validator,
     {
         self.input
             .iter()
-            .filter(|&entry| T::from(entry.policy).is_valid(&entry.password))
+            .filter(|&entry| V::is_valid(&entry.policy, &entry.password))
             .count()
     }
 }
@@ -112,10 +41,70 @@ impl Day for Day02 {
     }
 
     fn first_challenge(&self) -> String {
-        self.count_valid::<PolicyOld>().to_string()
+        self.count_valid::<OldValidator>().to_string()
     }
 
     fn second_challenge(&self) -> String {
-        self.count_valid::<PolicyNew>().to_string()
+        self.count_valid::<NewValidator>().to_string()
+    }
+}
+
+struct Entry {
+    password: String,
+    policy: Policy,
+}
+
+impl FromStr for Entry {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let vec = s.split(": ").collect::<Vec<_>>();
+
+        Ok(Self {
+            policy: vec[0].parse()?,
+            password: vec[1].trim().to_string(),
+        })
+    }
+}
+
+struct Policy {
+    letter: char,
+    first: usize,
+    second: usize,
+}
+
+impl FromStr for Policy {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let vec = s.split(|c| c == '-' || c == ' ').collect::<Vec<_>>();
+
+        Ok(Self {
+            first: vec[0].parse::<usize>()?,
+            second: vec[1].parse::<usize>()?,
+            letter: vec[2].chars().next().ok_or("Letter not found")?,
+        })
+    }
+}
+
+struct OldValidator;
+struct NewValidator;
+
+trait Validator {
+    fn is_valid(policy: &Policy, password: &str) -> bool;
+}
+
+impl Validator for OldValidator {
+    fn is_valid(policy: &Policy, password: &str) -> bool {
+        let counter = password.chars().collect::<Counter<_>>();
+        (policy.first..=policy.second).contains(&counter[&policy.letter])
+    }
+}
+
+impl Validator for NewValidator {
+    fn is_valid(policy: &Policy, password: &str) -> bool {
+        let chars = password.as_bytes();
+        let target = policy.letter as u8;
+        (chars[policy.first - 1] == target) ^ (chars[policy.second - 1] == target)
     }
 }
