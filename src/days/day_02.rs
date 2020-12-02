@@ -19,8 +19,11 @@ struct PolicyNew(Policy);
 
 struct Entry {
     password: String,
-    policy_old: PolicyOld,
-    policy_new: PolicyNew,
+    policy: Policy,
+}
+
+trait Validator: From<Policy> {
+    fn is_valid(&self, password: &str) -> bool;
 }
 
 impl From<&str> for Policy {
@@ -38,26 +41,36 @@ impl From<&str> for Policy {
 impl From<&str> for Entry {
     fn from(string: &str) -> Self {
         let vec = string.split(": ").collect::<Vec<_>>();
-        let policy = vec[0].into();
 
         Entry {
             password: vec[1].trim().to_string(),
-            policy_old: PolicyOld(policy),
-            policy_new: PolicyNew(policy),
+            policy: vec[0].into(),
         }
     }
 }
 
-impl PolicyOld {
-    pub fn is_valid(&self, password: &str) -> bool {
+impl From<Policy> for PolicyOld {
+    fn from(policy: Policy) -> Self {
+        Self(policy)
+    }
+}
+
+impl Validator for PolicyOld {
+    fn is_valid(&self, password: &str) -> bool {
         let policy = &self.0;
         let counter = password.chars().collect::<Counter<_>>();
         (policy.first..=policy.second).contains(&counter[&policy.letter])
     }
 }
 
-impl PolicyNew {
-    pub fn is_valid(&self, password: &str) -> bool {
+impl From<Policy> for PolicyNew {
+    fn from(policy: Policy) -> Self {
+        Self(policy)
+    }
+}
+
+impl Validator for PolicyNew {
+    fn is_valid(&self, password: &str) -> bool {
         let policy = &self.0;
         let chars = password.as_bytes();
         let target = policy.letter as u8;
@@ -79,7 +92,17 @@ impl Day02 {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
 
-        Ok(contents.lines().map(|line| line.into()).collect())
+        Ok(contents.lines().map(Entry::from).collect())
+    }
+
+    fn count_valid<T>(&self) -> usize
+    where
+        T: Validator,
+    {
+        self.input
+            .iter()
+            .filter(|&entry| T::from(entry.policy).is_valid(&entry.password))
+            .count()
     }
 }
 
@@ -89,18 +112,10 @@ impl Day for Day02 {
     }
 
     fn first_challenge(&self) -> String {
-        self.input
-            .iter()
-            .filter(|&entry| entry.policy_old.is_valid(&entry.password))
-            .count()
-            .to_string()
+        self.count_valid::<PolicyOld>().to_string()
     }
 
     fn second_challenge(&self) -> String {
-        self.input
-            .iter()
-            .filter(|&entry| entry.policy_new.is_valid(&entry.password))
-            .count()
-            .to_string()
+        self.count_valid::<PolicyNew>().to_string()
     }
 }
