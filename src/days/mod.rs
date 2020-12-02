@@ -1,6 +1,7 @@
 use std::{fmt::Display, path::Path};
 
 mod day_01;
+mod day_02;
 
 pub struct Advent {
     pub days: Vec<Box<dyn Day>>,
@@ -9,7 +10,10 @@ pub struct Advent {
 impl Advent {
     pub fn new() -> Self {
         Self {
-            days: vec![Box::new(day_01::Day01::new())],
+            days: vec![
+                Box::new(day_01::Day01::new()),
+                Box::new(day_02::Day02::new()),
+            ],
         }
     }
 }
