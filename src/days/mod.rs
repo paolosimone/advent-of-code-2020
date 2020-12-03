@@ -2,6 +2,7 @@ use std::{fmt::Display, path::Path};
 
 mod day_01;
 mod day_02;
+mod day_03;
 
 pub struct Advent {
     pub days: Vec<Box<dyn Day>>,
@@ -13,6 +14,7 @@ impl Advent {
             days: vec![
                 Box::new(day_01::Day01::default()),
                 Box::new(day_02::Day02::default()),
+                Box::new(day_03::Day03::default()),
             ],
         }
     }
