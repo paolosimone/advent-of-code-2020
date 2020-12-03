@@ -1,7 +1,6 @@
 use std::{error::Error, fs::read_to_string, path::Path, str::FromStr};
 
 use super::{input_folder, Day};
-use counter::Counter;
 
 #[derive(Default)]
 pub struct Day02 {
@@ -88,8 +87,8 @@ trait Validator {
 
 impl Validator for OldValidator {
     fn is_valid(policy: &Policy, password: &str) -> bool {
-        let counter = password.chars().collect::<Counter<_>>();
-        (policy.first..=policy.second).contains(&counter[&policy.letter])
+        let count = password.chars().filter(|&c| c == policy.letter).count();
+        (policy.first..=policy.second).contains(&count)
     }
 }
 
