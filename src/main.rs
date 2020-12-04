@@ -3,6 +3,9 @@ use std::time::{Duration, Instant};
 use cli_table::{Cell, Row, Table};
 use days::{Advent, Day};
 
+#[macro_use]
+extern crate lazy_static;
+
 mod days;
 
 fn main() {
