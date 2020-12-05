@@ -1,7 +1,8 @@
-use std::time::{Duration, Instant};
+use std::path::Path;
 
-use cli_table::{Cell, Row, Table};
-use days::{Advent, Day};
+use days::Advent;
+use output::{build_table, MERRY_CHRISTMAS};
+use report::build_report;
 
 #[macro_use]
 extern crate lazy_static;
@@ -15,10 +16,10 @@ fn main() {
         .nth(1)
         .map(|s| s.parse::<usize>().expect("Invalid number"));
 
-    let advent = Advent::new();
+    let advent = Advent::new(input_folder());
     let report = match day {
-        Some(number) => build_day_report(advent, number),
-        _ => build_report(advent),
+        Some(number) => build_report(advent, number..=number),
+        _ => build_report(advent, Advent::DAY_NUMBERS),
     };
 
     build_table(&report)
@@ -26,89 +27,100 @@ fn main() {
         .expect("Error printing results");
 }
 
-#[derive(Debug)]
-struct DayResult {
-    number: usize,
-    load_elapsed: Duration,
-    first_result: String,
-    first_elapsed: Duration,
-    second_result: String,
-    second_elapsed: Duration,
+fn input_folder() -> String {
+    Path::new(file!())
+        .parent()
+        .unwrap()
+        .join("input")
+        .to_str()
+        .unwrap()
+        .into()
 }
 
-type Report = Vec<DayResult>;
-type ReportSlice<'a> = &'a [DayResult];
+mod report {
+    use std::{
+        ops::RangeInclusive,
+        time::{Duration, Instant},
+    };
 
-fn build_report(advent: Advent) -> Report {
-    advent
-        .days
-        .into_iter()
-        .enumerate()
-        .map(|(i, day)| build_day_result(i + 1, day))
-        .collect()
-}
+    use crate::days::Advent;
 
-fn build_day_report(advent: Advent, number: usize) -> Report {
-    let day = advent
-        .days
-        .into_iter()
-        .nth(number - 1)
-        .expect("Day is missing");
+    pub struct DayResult {
+        pub number: usize,
+        pub load_elapsed: Duration,
+        pub first_result: String,
+        pub first_elapsed: Duration,
+        pub second_result: String,
+        pub second_elapsed: Duration,
+    }
 
-    vec![build_day_result(number, day)]
-}
+    pub type Report = Vec<DayResult>;
+    pub type ReportSlice<'a> = &'a [DayResult];
 
-fn build_day_result(number: usize, mut day: Box<dyn Day>) -> DayResult {
-    // TODO maybe use macro to measure time?
-    let load_input_start = Instant::now();
-    day.load_input();
+    pub fn build_report(advent: Advent, day_numbers: RangeInclusive<usize>) -> Report {
+        day_numbers
+            .map(|number| build_day_result(&advent, number))
+            .collect()
+    }
 
-    let first_challenge_start = Instant::now();
-    let first_challenge = day.first_challenge();
+    macro_rules! elapsed {
+        ($expression:expr) => {{
+            let clock = Instant::now();
+            let result = $expression;
+            (result, clock.elapsed())
+        }};
+    }
 
-    let second_challenge_start = Instant::now();
-    let second_challenge = day.second_challenge();
-    let final_tick = Instant::now();
+    fn build_day_result(advent: &Advent, number: usize) -> DayResult {
+        let (day, load_elapsed) = elapsed!(advent.load_day(number));
+        let (first_result, first_elapsed) = elapsed!(day.first_challenge());
+        let (second_result, second_elapsed) = elapsed!(day.second_challenge());
 
-    DayResult {
-        number,
-        first_result: first_challenge,
-        second_result: second_challenge,
-        load_elapsed: first_challenge_start.duration_since(load_input_start),
-        first_elapsed: second_challenge_start.duration_since(first_challenge_start),
-        second_elapsed: final_tick.duration_since(second_challenge_start),
+        DayResult {
+            number,
+            first_result,
+            second_result,
+            load_elapsed,
+            first_elapsed,
+            second_elapsed,
+        }
     }
 }
 
-fn build_table(report: ReportSlice) -> Table {
-    let mut rows = vec![build_header()];
-    rows.extend(report.iter().map(build_row));
-    Table::new(rows, Default::default()).unwrap()
-}
+mod output {
+    use cli_table::{Cell, Row, Table};
 
-fn build_header() -> Row {
-    Row::new(vec![
-        Cell::new("day", Default::default()),
-        Cell::new("load_elapsed", Default::default()),
-        Cell::new("first_result", Default::default()),
-        Cell::new("first_elapsed", Default::default()),
-        Cell::new("second_result", Default::default()),
-        Cell::new("second_elapsed", Default::default()),
-    ])
-}
+    use crate::report::{DayResult, ReportSlice};
 
-fn build_row(day: &DayResult) -> Row {
-    Row::new(vec![
-        Cell::new(&format!("{:02}", &day.number), Default::default()),
-        Cell::new(&format!("{:?}", &day.load_elapsed), Default::default()),
-        Cell::new(&day.first_result.to_string(), Default::default()),
-        Cell::new(&format!("{:?}", &day.first_elapsed), Default::default()),
-        Cell::new(&day.second_result.to_string(), Default::default()),
-        Cell::new(&format!("{:?}", &day.second_elapsed), Default::default()),
-    ])
-}
+    pub fn build_table(report: ReportSlice) -> Table {
+        let mut rows = vec![build_header()];
+        rows.extend(report.iter().map(build_row));
+        Table::new(rows, Default::default()).unwrap()
+    }
 
-const MERRY_CHRISTMAS: &str = r"
+    fn build_header() -> Row {
+        Row::new(vec![
+            Cell::new("day", Default::default()),
+            Cell::new("load_elapsed", Default::default()),
+            Cell::new("first_result", Default::default()),
+            Cell::new("first_elapsed", Default::default()),
+            Cell::new("second_result", Default::default()),
+            Cell::new("second_elapsed", Default::default()),
+        ])
+    }
+
+    fn build_row(day: &DayResult) -> Row {
+        Row::new(vec![
+            Cell::new(&format!("{:02}", &day.number), Default::default()),
+            Cell::new(&format!("{:?}", &day.load_elapsed), Default::default()),
+            Cell::new(&day.first_result.to_string(), Default::default()),
+            Cell::new(&format!("{:?}", &day.first_elapsed), Default::default()),
+            Cell::new(&day.second_result.to_string(), Default::default()),
+            Cell::new(&format!("{:?}", &day.second_elapsed), Default::default()),
+        ])
+    }
+
+    pub const MERRY_CHRISTMAS: &str = r"
 
          ,---.  ,---.  ,---.  .-.   .-.                          
          |\    /| | .-'  | .-.\ | .-.\  \ \_/ )/                          
@@ -125,4 +137,5 @@ const MERRY_CHRISTMAS: &str = r"
            \____\|_| \)\`---(_) `----'     `-'   | |\/| ||_|  (_) `----'  
                      (__)                        '-'  '-'                 
 
-";
+    ";
+}

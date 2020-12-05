@@ -1,26 +1,29 @@
-use std::{collections::HashSet, fs::read_to_string, path::Path};
+use std::collections::HashSet;
 
-use super::{input_folder, Day};
+use super::Day;
 
 const TARGET: i32 = 2020;
 
-#[derive(Default)]
 pub struct Day01 {
     input: Vec<i32>,
 }
 
-impl Day for Day01 {
-    fn load_input(&mut self) {
-        let path = Path::new(&input_folder()).join("day_01");
-        let content = read_to_string(path).expect("Load input failed");
-
-        self.input = content
-            .lines()
-            .map(|line| line.parse::<i32>())
-            .collect::<Result<_, _>>()
-            .expect("Parse input failed");
+impl Day01 {
+    pub fn load(input: &str) -> Self {
+        Self {
+            input: Self::parse_input(input),
+        }
     }
 
+    fn parse_input(s: &str) -> Vec<i32> {
+        s.lines()
+            .map(|line| line.parse::<i32>())
+            .collect::<Result<_, _>>()
+            .expect("Parse input failed")
+    }
+}
+
+impl Day for Day01 {
     // O(N)
     fn first_challenge(&self) -> String {
         let mut seen = HashSet::new();

@@ -1,13 +1,22 @@
-use std::{fs::read_to_string, path::Path};
+use super::Day;
 
-use super::{input_folder, Day};
-
-#[derive(Default)]
 pub struct Day03 {
     input: Area,
 }
 
 impl Day03 {
+    pub fn load(input: &str) -> Self {
+        Self {
+            input: Self::parse_input(input),
+        }
+    }
+
+    fn parse_input(s: &str) -> Area {
+        s.lines()
+            .map(|line| line.chars().map(Square::from).collect())
+            .collect()
+    }
+
     fn count_trees(&self, right: usize, down: usize) -> usize {
         (0..self.input.len())
             .step_by(down)
@@ -18,21 +27,9 @@ impl Day03 {
             })
             .count()
     }
-
-    fn parse_input(s: &str) -> Area {
-        s.lines()
-            .map(|line| line.chars().map(Square::from).collect())
-            .collect()
-    }
 }
 
 impl Day for Day03 {
-    fn load_input(&mut self) {
-        let path = Path::new(&input_folder()).join("day_03");
-        let content = read_to_string(path).expect("Load input failed");
-        self.input = Day03::parse_input(&content);
-    }
-
     fn first_challenge(&self) -> String {
         self.count_trees(3, 1).to_string()
     }
@@ -40,7 +37,7 @@ impl Day for Day03 {
     fn second_challenge(&self) -> String {
         [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
             .iter()
-            .map(|(right, down)| self.count_trees(*right, *down))
+            .map(|&(right, down)| self.count_trees(right, down))
             .fold(1, std::ops::Mul::mul)
             .to_string()
     }
@@ -84,15 +81,13 @@ mod tests {
 
     #[test]
     fn test_first_challenge() {
-        let mut day = Day03::default();
-        day.input = Day03::parse_input(INPUT);
+        let day = Day03::load(INPUT);
         assert_eq!(day.first_challenge(), "7");
     }
 
     #[test]
     fn test_second_challenge() {
-        let mut day = Day03::default();
-        day.input = Day03::parse_input(INPUT);
+        let day = Day03::load(INPUT);
         assert_eq!(day.second_challenge(), "336");
     }
 }

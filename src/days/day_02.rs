@@ -1,13 +1,25 @@
-use std::{error::Error, fs::read_to_string, path::Path, str::FromStr};
+use std::{error::Error, str::FromStr};
 
-use super::{input_folder, Day};
+use super::Day;
 
-#[derive(Default)]
 pub struct Day02 {
     input: Vec<Entry>,
 }
 
 impl Day02 {
+    pub fn load(input: &str) -> Self {
+        Self {
+            input: Self::parse_input(input),
+        }
+    }
+
+    fn parse_input(s: &str) -> Vec<Entry> {
+        s.lines()
+            .map(Entry::from_str)
+            .collect::<Result<_, _>>()
+            .expect("Parse input failed")
+    }
+
     fn count_valid<V>(&self) -> usize
     where
         V: Validator,
@@ -20,17 +32,6 @@ impl Day02 {
 }
 
 impl Day for Day02 {
-    fn load_input(&mut self) {
-        let path = Path::new(&input_folder()).join("day_02");
-        let content = read_to_string(path).expect("Load input failed");
-
-        self.input = content
-            .lines()
-            .map(Entry::from_str)
-            .collect::<Result<_, _>>()
-            .expect("Parse input failed");
-    }
-
     fn first_challenge(&self) -> String {
         self.count_valid::<OldValidator>().to_string()
     }

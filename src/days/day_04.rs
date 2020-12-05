@@ -1,10 +1,7 @@
-use std::{fs::read_to_string, path::Path};
-
 use regex::Regex;
 
-use super::{input_folder, Day};
+use super::Day;
 
-#[derive(Default)]
 pub struct Day04 {
     input: Vec<Passport>,
 }
@@ -16,6 +13,12 @@ impl Day04 {
     const BLANK_LINE: &'static str = "\n\n";
     const SEPARATOR: &'static str = ":";
 
+    pub fn load(input: &str) -> Self {
+        Self {
+            input: Self::parse_input(input),
+        }
+    }
+
     fn parse_input(s: &str) -> Vec<Passport> {
         s.split(Self::BLANK_LINE)
             .map(Self::parse_passport)
@@ -23,15 +26,12 @@ impl Day04 {
     }
 
     fn parse_passport(s: &str) -> Passport {
-        let mut passport = s
-            .split_ascii_whitespace()
+        s.split_ascii_whitespace()
             .map(|entry| {
                 let pair = entry.split(Self::SEPARATOR).collect::<Vec<_>>();
                 (pair[0].to_string(), pair[1].to_string())
             })
-            .collect::<Vec<_>>();
-        passport.sort();
-        passport
+            .collect()
     }
 
     fn count_valid<V>(&self) -> usize
@@ -46,12 +46,6 @@ impl Day04 {
 }
 
 impl Day for Day04 {
-    fn load_input(&mut self) {
-        let path = Path::new(&input_folder()).join("day_04");
-        let content = read_to_string(path).expect("Load input failed");
-        self.input = Day04::parse_input(&content);
-    }
-
     fn first_challenge(&self) -> String {
         self.count_valid::<OldValidator>().to_string()
     }
@@ -60,7 +54,6 @@ impl Day for Day04 {
         self.count_valid::<NewValidator>().to_string()
     }
 }
-
 trait PassportValidator {
     fn is_valid(passport: &Passport) -> bool;
 }
@@ -247,17 +240,13 @@ iyr:2011 ecl:brn hgt:59in";
 
     #[test]
     fn test_first_challenge() {
-        let mut day = Day04::default();
-        day.input = Day04::parse_input(INPUT);
+        let day = Day04::load(INPUT);
         assert_eq!(day.first_challenge(), "2");
     }
 
     #[test]
-    fn test_second_challenge() {
-        let mut day = Day04::default();
-
-        day.input = Day04::parse_input(
-            "eyr:1972 cid:100
+    fn test_second_challenge_invalid() {
+        let input = "eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
 iyr:2019
@@ -269,12 +258,14 @@ ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
 
 hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
-pid:3556412378 byr:20076",
-        );
+pid:3556412378 byr:20076";
+        let day = Day04::load(input);
         assert_eq!(day.second_challenge(), "0");
+    }
 
-        day.input = Day04::parse_input(
-            "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
+    #[test]
+    fn test_second_challenge_valid() {
+        let input = "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
 eyr:2029 ecl:blu cid:129 byr:1989
@@ -285,8 +276,8 @@ hgt:164cm byr:2001 iyr:2015 cid:88
 pid:545766238 ecl:hzl
 eyr:2022
 
-iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
-        );
+iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719";
+        let day = Day04::load(input);
         assert_eq!(day.second_challenge(), "4");
     }
 

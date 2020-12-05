@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::Path};
+use std::{fs::read_to_string, ops::RangeInclusive, path::Path};
 
 mod day_01;
 mod day_02;
@@ -7,51 +7,37 @@ mod day_04;
 mod day_05;
 
 pub struct Advent {
-    pub days: Vec<Box<dyn Day>>,
+    input_folder: String,
 }
 
 impl Advent {
-    pub fn new() -> Self {
-        Self {
-            days: vec![
-                Box::new(day_01::Day01::default()),
-                Box::new(day_02::Day02::default()),
-                Box::new(day_03::Day03::default()),
-                Box::new(day_04::Day04::default()),
-                Box::new(day_05::Day05::default()),
-            ],
+    pub const DAY_NUMBERS: RangeInclusive<usize> = 1..=5;
+
+    pub fn new(input_folder: String) -> Self {
+        Self { input_folder }
+    }
+
+    pub fn load_day(&self, number: usize) -> Box<dyn Day> {
+        let ref input_path = Path::new(&self.input_folder)
+            .join(format!("day_{:02}", number))
+            .to_str()
+            .unwrap()
+            .to_owned();
+
+        let ref input = read_to_string(input_path).expect("Load input failed");
+
+        match number {
+            1 => Box::new(day_01::Day01::load(input)),
+            2 => Box::new(day_02::Day02::load(input)),
+            3 => Box::new(day_03::Day03::load(input)),
+            4 => Box::new(day_04::Day04::load(input)),
+            5 => Box::new(day_05::Day05::load(input)),
+            _ => panic!("Error 404: day {} not found!"),
         }
     }
 }
 
 pub trait Day {
-    fn load_input(&mut self);
     fn first_challenge(&self) -> String;
     fn second_challenge(&self) -> String;
-}
-
-impl Display for dyn Day {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Day - first: {} | second: {}",
-            self.first_challenge(),
-            self.second_challenge()
-        )
-    }
-}
-
-pub fn input_folder() -> String {
-    // it's christmas: let's unwrap all options!
-    // (I hope I'm missing a better way...)
-    Path::new(file!())
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("input")
-        .as_path()
-        .to_str()
-        .unwrap()
-        .into()
 }
