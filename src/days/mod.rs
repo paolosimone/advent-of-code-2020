@@ -5,13 +5,14 @@ mod day_02;
 mod day_03;
 mod day_04;
 mod day_05;
+mod day_06;
 
 pub struct Advent {
     input_folder: String,
 }
 
 impl Advent {
-    pub const DAY_NUMBERS: RangeInclusive<usize> = 1..=5;
+    pub const DAY_NUMBERS: RangeInclusive<usize> = 1..=6;
 
     pub fn new(input_folder: String) -> Self {
         Self { input_folder }
@@ -32,6 +33,7 @@ impl Advent {
             3 => Box::new(day_03::Day03::load(input)),
             4 => Box::new(day_04::Day04::load(input)),
             5 => Box::new(day_05::Day05::load(input)),
+            6 => Box::new(day_06::Day06::load(input)),
             _ => panic!("Error 404: day {} not found!"),
         }
     }
