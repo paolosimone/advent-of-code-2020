@@ -4,10 +4,10 @@ pub struct Day06 {
     input: Vec<GroupAnswers>,
 }
 
-const QUESTIONS: usize = 26;
+const QUESTIONS: u32 = 26;
 
 type GroupAnswers = Vec<PersonAnswers>;
-type PersonAnswers = Vec<bool>;
+type PersonAnswers = u32;
 
 impl Day06 {
     const BLANK_LINE: &'static str = "\n\n";
@@ -28,14 +28,15 @@ impl Day06 {
         s.lines().map(Self::parse_person_answers).collect()
     }
 
+    // "daec" -> 1101
     fn parse_person_answers(s: &str) -> PersonAnswers {
-        lazy_static! {
-            static ref QUESTION_IDS: Vec<char> = (0..QUESTIONS as u32)
-                .map(|q| std::char::from_u32('a' as u32 + q).unwrap())
-                .collect();
-        };
+        s.chars()
+            .fold(0, |acc, c| acc | (1 << (c as u32 - 'a' as u32)))
+    }
 
-        QUESTION_IDS.iter().map(|q| s.contains(*q)).collect()
+    // 1101 -> 3
+    fn count_answers(answers: u32) -> u32 {
+        (0..QUESTIONS).map(|i| (answers >> i) & 1).sum()
     }
 }
 
@@ -44,11 +45,10 @@ impl Day for Day06 {
         self.input
             .iter()
             .map(|group| {
-                (0..QUESTIONS)
-                    .filter(|&question| group.iter().any(|person| person[question]))
-                    .count()
+                let union = group.iter().fold(0, |acc, answers| acc | answers);
+                Self::count_answers(union)
             })
-            .sum::<usize>()
+            .sum::<u32>()
             .to_string()
     }
 
@@ -56,11 +56,11 @@ impl Day for Day06 {
         self.input
             .iter()
             .map(|group| {
-                (0..QUESTIONS)
-                    .filter(|&question| group.iter().all(|person| person[question]))
-                    .count()
+                let all_yes = (1 << QUESTIONS) - 1;
+                let intersection = group.iter().fold(all_yes, |acc, answers| acc & answers);
+                Self::count_answers(intersection)
             })
-            .sum::<usize>()
+            .sum::<u32>()
             .to_string()
     }
 }
