@@ -50,8 +50,8 @@ impl Day07 {
 
     fn count_paths_dfs(
         &self,
-        color: &Color,
-        target: &Color,
+        color: &str,
+        target: &str,
         memo: &mut HashMap<Color, usize>,
     ) -> usize {
         if color == target {
@@ -67,7 +67,7 @@ impl Day07 {
             .map(|(color, _)| self.count_paths_dfs(color, target, memo))
             .sum();
 
-        memo.insert(color.clone(), paths);
+        memo.insert(color.to_string(), paths);
         memo[color]
     }
 
@@ -75,7 +75,7 @@ impl Day07 {
         self.count_nested_dfs(&source, &mut HashMap::new()) - 1
     }
 
-    fn count_nested_dfs(&self, color: &Color, memo: &mut HashMap<Color, usize>) -> usize {
+    fn count_nested_dfs(&self, color: &str, memo: &mut HashMap<Color, usize>) -> usize {
         if memo.contains_key(color) {
             return memo[color];
         }
@@ -85,7 +85,7 @@ impl Day07 {
             .map(|(color, bag_count)| self.count_nested_dfs(color, memo) * bag_count)
             .sum::<usize>();
 
-        memo.insert(color.clone(), nested + 1);
+        memo.insert(color.to_string(), nested + 1);
         memo[color]
     }
 }

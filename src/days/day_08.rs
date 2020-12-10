@@ -91,7 +91,7 @@ impl Day for Day08 {
         let cycle_start = self.find_cycle_start();
 
         // continue until we reach cycle start again
-        let mut state = cycle_start.clone();
+        let mut state = cycle_start;
         state = self.next(state);
         while state.0 != cycle_start.0 {
             state = self.next(state);

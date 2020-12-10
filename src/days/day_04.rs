@@ -7,7 +7,8 @@ pub struct Day04 {
 }
 
 // apparently for this problem size a vector is faster than a hashmap :O
-type Passport = Vec<(String, String)>;
+type Passport = Vec<PassportField>;
+type PassportField = (String, String);
 
 impl Day04 {
     const BLANK_LINE: &'static str = "\n\n";
@@ -55,7 +56,7 @@ impl Day for Day04 {
     }
 }
 trait PassportValidator {
-    fn is_valid(passport: &Passport) -> bool;
+    fn is_valid(passport: &[PassportField]) -> bool;
 }
 
 struct OldValidator;
@@ -65,7 +66,7 @@ impl OldValidator {
 }
 
 impl PassportValidator for OldValidator {
-    fn is_valid(passport: &Passport) -> bool {
+    fn is_valid(passport: &[PassportField]) -> bool {
         Self::REQUIRED_FIELDS
             .iter()
             .all(|&key| passport.iter().any(|(pkey, _)| pkey.as_str() == key))
@@ -99,7 +100,7 @@ impl NewValidator {
 }
 
 impl PassportValidator for NewValidator {
-    fn is_valid(passport: &Passport) -> bool {
+    fn is_valid(passport: &[PassportField]) -> bool {
         Self::FIELD_VALIDATORS.iter().all(|&validator| {
             passport
                 .iter()

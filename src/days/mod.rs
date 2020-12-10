@@ -28,13 +28,13 @@ impl Advent {
     }
 
     pub fn load_day(&self, number: usize) -> Box<dyn Day> {
-        let ref input_path = Path::new(&self.input_folder)
+        let input_path = &Path::new(&self.input_folder)
             .join(format!("day_{:02}", number))
             .to_str()
             .unwrap()
             .to_owned();
 
-        let ref input = read_to_string(input_path).expect("Load input failed");
+        let input = &read_to_string(input_path).expect("Load input failed");
 
         match number {
             1 => Box::new(day_01::Day01::load(input)),
