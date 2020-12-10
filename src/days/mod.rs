@@ -9,6 +9,7 @@ mod day_06;
 mod day_07;
 mod day_08;
 mod day_09;
+mod day_10;
 
 pub trait Day {
     fn first_challenge(&self) -> String;
@@ -20,7 +21,7 @@ pub struct Advent {
 }
 
 impl Advent {
-    pub const DAY_NUMBERS: RangeInclusive<usize> = 1..=9;
+    pub const DAY_NUMBERS: RangeInclusive<usize> = 1..=10;
 
     pub fn new(input_folder: String) -> Self {
         Self { input_folder }
@@ -45,7 +46,8 @@ impl Advent {
             7 => Box::new(day_07::Day07::load(input)),
             8 => Box::new(day_08::Day08::load(input)),
             9 => Box::new(day_09::Day09::load(input)),
-            _ => panic!("Error 404: day {} not found!"),
+            10 => Box::new(day_10::Day10::load(input)),
+            _ => panic!("Error 404: day {} not found!", number),
         }
     }
 }
