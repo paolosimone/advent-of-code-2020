@@ -46,20 +46,13 @@ impl Day for Day14 {
         state.total_sum().to_string()
     }
 
-    // ... apparently doesn't work :/
+    // my original super clever solution was wrong... but was wrong 30x faster :)
     fn second_challenge(&self) -> String {
         let mut state = v2::State::default();
-        self.input.iter().for_each(|op| {
-            state.apply(op);
-            // println!("{:?}", state);
-        });
-        state.total_sum().to_string();
-        "INCORRECT".to_string()
+        self.input.iter().for_each(|op| state.apply(op));
+        state.total_sum().to_string()
     }
 }
-
-const BITS: usize = 36;
-const ONES: usize = (1 << BITS) - 1;
 
 enum Op {
     Mask(String),
@@ -69,7 +62,7 @@ enum Op {
 mod v1 {
     use std::collections::HashMap;
 
-    use super::{Op, BITS};
+    use super::Op;
 
     #[derive(Debug, Default)]
     pub(super) struct State {
@@ -83,6 +76,7 @@ mod v1 {
                 Op::Mask(bits) => {
                     self.mask = Mask::from_str(bits);
                 }
+
                 Op::Mem(key, value) => {
                     self.registers.insert(*key, self.mask.apply(*value));
                 }
@@ -94,17 +88,10 @@ mod v1 {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     struct Mask {
         and: usize,
         or: usize,
-    }
-
-    impl Default for Mask {
-        fn default() -> Self {
-            let default = &String::from_utf8(vec![b'X'; BITS]).unwrap();
-            Self::from_str(default)
-        }
     }
 
     impl Mask {
@@ -122,106 +109,53 @@ mod v1 {
 }
 
 mod v2 {
-    use std::fmt::Debug;
+    use std::collections::HashMap;
 
-    use super::{Op, BITS, ONES};
+    use super::Op;
 
     #[derive(Debug, Default)]
     pub(super) struct State {
-        registers: Vec<Register>,
-        mask: FloatingValue,
+        registers: HashMap<usize, usize>,
+        mask: Mask,
     }
 
     impl State {
         pub(super) fn apply(&mut self, op: &Op) {
             match op {
                 Op::Mask(bits) => {
-                    self.mask = FloatingValue::from_str(bits);
+                    self.mask = Mask::from_str(&bits);
                 }
-                Op::Mem(key, value) => {
-                    let floating_key = FloatingValue {
-                        fixed: self.mask.fixed,
-                        value: (key | self.mask.value) & self.mask.fixed,
-                    };
 
-                    self.mem(floating_key, *value);
+                Op::Mem(key, value) => {
+                    self.mask
+                        .apply(*key)
+                        .iter()
+                        .for_each(|&key| drop(self.registers.insert(key, *value)));
                 }
             }
         }
 
         pub(super) fn total_sum(&self) -> usize {
-            self.registers
-                .iter()
-                .filter(|&r| r.valid)
-                .map(|r| r.value * Self::count_real_keys(r))
-                .sum::<usize>()
-        }
-
-        fn mem(&mut self, key: FloatingValue, value: usize) {
-            // probably we could do something better than a full scan?
-            self.registers
-                .iter_mut()
-                .filter(|r| r.key.overlaps(&key))
-                .for_each(|mut r| Self::update(&mut r, &key));
-
-            self.registers.push(Register {
-                key,
-                value,
-                valid: true,
-            });
-        }
-
-        fn update(old: &mut Register, new_key: &FloatingValue) {
-            old.valid = !new_key.contains(&old.key);
-
-            let to_fix = !old.key.fixed & new_key.fixed;
-            old.key.value = (old.key.value & !to_fix) | (to_fix & !new_key.value);
-            old.key.fixed |= new_key.fixed;
-        }
-
-        fn count_real_keys(register: &Register) -> usize {
-            1 << Self::count_ones(!register.key.fixed)
-        }
-
-        fn count_ones(x: usize) -> usize {
-            (0..BITS).map(|i| (x >> i) & 1).sum()
+            self.registers.values().sum::<usize>()
         }
     }
 
-    #[derive(Debug)]
-    struct Register {
-        key: FloatingValue,
-        value: usize,
-        valid: bool,
+    #[derive(Debug, Default)]
+    struct Mask {
+        free: usize,
+        fixed: Vec<usize>,
     }
 
-    // 1XX0X -> fixed: 10010, value: 10000
-    struct FloatingValue {
-        fixed: usize,
-        value: usize,
-    }
-
-    impl Debug for FloatingValue {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.write_fmt(format_args!(
-                "FV {{fix: {:0b}, valb: {:0b}, val: {}}}",
-                self.fixed, self.value, self.value
-            ))
-        }
-    }
-
-    impl Default for FloatingValue {
-        fn default() -> Self {
-            FloatingValue {
-                fixed: ONES,
-                value: 0,
+    impl Mask {
+        fn from_str(s: &str) -> Self {
+            Self {
+                free: Self::parse_free(s),
+                fixed: Self::parse_fixed(s),
             }
         }
-    }
 
-    impl FloatingValue {
-        fn from_str(s: &str) -> Self {
-            let fixed = s
+        fn parse_free(s: &str) -> usize {
+            let free = s
                 .chars()
                 .map(|c| match c {
                     'X' => '0',
@@ -229,19 +163,34 @@ mod v2 {
                 })
                 .collect::<String>();
 
-            Self {
-                fixed: usize::from_str_radix(&fixed, 2).unwrap(),
-                value: usize::from_str_radix(&s.replace("X", "0"), 2).unwrap(),
+            usize::from_str_radix(&free, 2).unwrap()
+        }
+
+        fn parse_fixed(s: &str) -> Vec<usize> {
+            let mut fixed = vec![0];
+            for (i, c) in s.chars().rev().enumerate() {
+                let bit_mask = 1 << i;
+                match c {
+                    // force 1
+                    '1' => {
+                        fixed.iter_mut().for_each(|f| *f |= bit_mask);
+                    }
+                    // floating: both 0 and 1
+                    'X' => {
+                        let half = fixed.len();
+                        fixed.extend(fixed.to_vec());
+                        fixed[..half].iter_mut().for_each(|f| *f |= bit_mask);
+                    }
+                    // do nothing
+                    _ => {}
+                }
             }
+            fixed
         }
 
-        fn overlaps(&self, other: &FloatingValue) -> bool {
-            let both_fixed = self.fixed & other.fixed;
-            self.value & both_fixed == other.value & both_fixed
-        }
-
-        fn contains(&self, other: &FloatingValue) -> bool {
-            self.overlaps(other) && (self.fixed | other.fixed) == other.fixed
+        fn apply(&self, x: usize) -> Vec<usize> {
+            let free = x & self.free;
+            self.fixed.iter().map(|forced| free | forced).collect()
         }
     }
 }
